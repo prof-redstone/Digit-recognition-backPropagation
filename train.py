@@ -1,6 +1,9 @@
 import numpy as np
 import struct
 import pickle
+import time
+
+load = True
 
 def read_idx(filename):
     with open(filename, 'rb') as f:
@@ -14,9 +17,8 @@ train_labels = read_idx('data\\train-labels.idx1-ubyte')
 test_images = read_idx('data\\t10k-images.idx3-ubyte')
 test_labels = read_idx('data\\t10k-labels.idx1-ubyte')
 
-
-print(test_images[0])
-print(test_labels[0])
+print("taille data train ", len(train_images))
+print("taille data test ", len(train_images))
 
 train_images = train_images / 255.0
 test_images = test_images / 255.0
@@ -36,6 +38,34 @@ w1 = np.random.randn(input_size, hidden_size) * 0.01
 b1 = np.zeros((1, hidden_size))
 w2 = np.random.randn(hidden_size, output_size) * 0.01
 b2 = np.zeros((1, output_size))
+
+def save_parameters(filename, w1, b1, w2, b2):
+    parameters = {
+        'w1': w1,
+        'b1': b1,
+        'w2': w2,
+        'b2': b2
+    }
+    with open(filename, 'wb') as f:
+        pickle.dump(parameters, f)
+
+def load_parameters(filename):
+    with open(filename, 'rb') as f:
+        parameters = pickle.load(f)
+    w1 = parameters['w1']
+    b1 = parameters['b1']
+    w2 = parameters['w2']
+    b2 = parameters['b2']
+    return w1, b1, w2, b2
+
+def generate_filename():
+    timestamp = int(time.time())  # Obtenir le timestamp actuel en secondes
+    filename = f"parameters_{timestamp}.pkl"  # Générer le nom du fichier avec le timestamp
+    return filename
+
+if load :
+    w1, b1, w2, b2 = load_parameters('weight.pkl')
+
 
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
@@ -68,21 +98,25 @@ def backpropag(x,y,z1,a1,z2,a2):
     dW1 = np.dot(x.T, dz1) / m
     db1 = np.sum(dz1, axis=0) / m
 
-    learning_rate = 0.1
+    learning_rate = 0.01
     w1 -= learning_rate * dW1
     b1 -= learning_rate * db1
     w2 -= learning_rate * dW2
     b2 -= learning_rate * db2
 
-epochs = 1000
-for epoch in range(epochs):
-    z1, a1, z2, a2 = process_forward(train_images.reshape(-1, 784))
-    loss = calcul_loss(train_labels, a2)
-    backpropag(train_images.reshape(-1, 784), train_labels, z1, a1, z2, a2)
-    if epoch % 100 == 0:
-        print("epochs :", epochs, "loss :", loss)
+def train():
+    epochs = 1000
+    for epoch in range(epochs):
+        z1, a1, z2, a2 = process_forward(train_images.reshape(-1, 784))
+        loss = calcul_loss(train_labels, a2)
+        backpropag(train_images.reshape(-1, 784), train_labels, z1, a1, z2, a2)
+        if epoch % 100 == 0:
+            save_parameters(generate_filename(), w1, b1, w2, b2)
+            print("epochs :", epoch, "loss :", loss)
 
+def test():
+    _, _, _, a2 = process_forward(test_images.reshape(-1, 784))
+    accuracy = np.mean(np.argmax(a2, axis=1) == np.argmax(test_labels, axis=1))
+    print(f'Test Accuracy: {accuracy}')
 
-_, _, _, a2 = process_forward(test_images.reshape(-1, 784))
-accuracy = np.mean(np.argmax(a2, axis=1) == np.argmax(test_labels, axis=1))
-print(f'Test Accuracy: {accuracy}')
+test()
