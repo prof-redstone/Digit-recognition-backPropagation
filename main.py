@@ -15,7 +15,7 @@ test_labels = read_idx('data\\t10k-labels.idx1-ubyte')
 
 train_images = train_images / 255.0
 test_images = test_images / 255.0
-
+#test
 
 print(test_images[0])
 print(test_labels[0])
