@@ -1,29 +1,7 @@
 import torch
 import torch.nn as nn
-import torch.optim as optim
-from torch.optim.lr_scheduler import StepLR
 import numpy as np
-import struct
 import tkinter as tk
-import time
-from torch.utils.data import DataLoader, TensorDataset
-
-def read_idx(filename):
-    with open(filename, 'rb') as f:
-        zero, data_type, dims = struct.unpack('>HBB', f.read(4))
-        shape = tuple(struct.unpack('>I', f.read(4))[0] for d in range(dims))
-        return np.frombuffer(f.read(), dtype=np.uint8).reshape(shape)
-
-# Read the files
-train_images = read_idx('data/augmented-train-images.idx3-ubyte')
-train_labels = read_idx('data/augmented-train-labels.idx1-ubyte')
-test_images = read_idx('data/t10k-images.idx3-ubyte')
-test_labels = read_idx('data/t10k-labels.idx1-ubyte')
-
-train_images = torch.tensor(train_images / 255.0, dtype=torch.float32).unsqueeze(1)
-train_labels = torch.tensor(train_labels, dtype=torch.long)
-test_images = torch.tensor(test_images / 255.0, dtype=torch.float32).unsqueeze(1)
-test_labels = torch.tensor(test_labels, dtype=torch.long)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -49,94 +27,10 @@ class CNN(nn.Module):
 
 model = CNN().to(device)
 
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
-scheduler = StepLR(optimizer, step_size=5, gamma=0.5)  # Decrease learning rate every 5 epochs
-
-# Using DataLoader for efficient batching
-batch_size = 64
-
-train_dataset = TensorDataset(train_images, train_labels)
-train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-
-test_dataset = TensorDataset(test_images, test_labels)
-test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
-
-def save_parameters(filename, model):
-    torch.save(model.state_dict(), filename)
-
 def load_parameters(filename, model):
     model.load_state_dict(torch.load(filename))
     return model
 
-def generate_filename():
-    timestamp = int(time.time())
-    filename = f"param/gparameters_{timestamp}.pkl"
-    return filename
-
-def train():
-    epochs = 20  # Increase the number of epochs for better accuracy
-    best_val_loss = float('inf')
-    early_stopping_patience = 5
-    patience_counter = 0
-
-    for epoch in range(epochs):
-        model.train()
-        running_loss = 0.0
-        for i, (inputs, labels) in enumerate(train_loader):
-            inputs, labels = inputs.to(device), labels.to(device)
-            
-            optimizer.zero_grad()
-            outputs = model(inputs)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-            
-            running_loss += loss.item()
-
-        scheduler.step()
-
-        # Validation
-        model.eval()
-        val_loss = 0.0
-        correct = 0
-        total = 0
-        with torch.no_grad():
-            for inputs, labels in test_loader:
-                inputs, labels = inputs.to(device), labels.to(device)
-                outputs = model(inputs)
-                loss = criterion(outputs, labels)
-                val_loss += loss.item()
-                _, predicted = torch.max(outputs.data, 1)
-                total += labels.size(0)
-                correct += (predicted == labels).sum().item()
-
-        val_loss /= len(test_loader)
-        accuracy = 100 * correct / total
-
-        print(f'Epoch [{epoch+1}/{epochs}], Loss: {running_loss/len(train_loader):.4f}, Val Loss: {val_loss:.4f}, Accuracy: {accuracy:.2f}%')
-
-        # Early stopping
-        if val_loss < best_val_loss:
-            best_val_loss = val_loss
-            patience_counter = 0
-            save_parameters(generate_filename(), model)
-        else:
-            patience_counter += 1
-            if patience_counter >= early_stopping_patience:
-                print("Early stopping triggered.")
-                break
-
-def test():
-    model.eval()
-    with torch.no_grad():
-        # Ensure the inputs are in the correct shape: [batch_size, channels, height, width]
-        inputs = test_images.to(device)
-        labels = test_labels.to(device)
-        outputs = model(inputs)
-        _, predicted = torch.max(outputs.data, 1)
-        accuracy = (predicted == labels).sum().item() / labels.size(0)
-        print(f'Test Accuracy: {accuracy:.2f}%')
 
 
 def process_drawing(tab):
@@ -217,6 +111,4 @@ def gess():
     
 if __name__ == "__main__":
     load_parameters("param/g2weight.pkl", model)
-    train()
-    test()
-    #gess()
+    gess()

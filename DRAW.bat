@@ -1,0 +1,2 @@
+python draw.py
+pause
