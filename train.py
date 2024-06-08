@@ -7,7 +7,7 @@ import scipy.ndimage
 import matplotlib.pyplot as plt
 import random
 
-load = False
+load = True
 
 def read_idx(filename):
     with open(filename, 'rb') as f:
@@ -16,8 +16,8 @@ def read_idx(filename):
         return np.frombuffer(f.read(), dtype=np.uint8).reshape(shape)
 
 # Lire les fichiers
-train_images = read_idx('data\\augmented-train-images.idx3-ubyte')
-train_labels = read_idx('data\\augmented-train-labels.idx3-ubyte')
+train_images = read_idx('data\\train-images.idx3-ubyte')
+train_labels = read_idx('data\\train-labels.idx1-ubyte')
 test_images = read_idx('data\\t10k-images.idx3-ubyte')
 test_labels = read_idx('data\\t10k-labels.idx1-ubyte')
 
@@ -36,7 +36,7 @@ train_labels = one_hot_encode(train_labels)
 test_labels = one_hot_encode(test_labels)
 
 input_size = 28*28
-hidden_size = 150  #changer la val
+hidden_size = 70  #changer la val
 output_size = 10
 
 np.random.seed(0)
@@ -133,7 +133,7 @@ def train():
         z1, a1, z2, a2 = process_forward(train_images.reshape(-1, 784))
         loss = calcul_loss(train_labels, a2)
         backpropag(train_images.reshape(-1, 784), train_labels, z1, a1, z2, a2)
-        if epoch % 10 == 0:
+        if epoch % 100 == 0:
             save_parameters(generate_filename(), w1, b1, w2, b2)
             print("epochs :", epoch, "loss :", loss)
 
@@ -220,7 +220,7 @@ def gess():
     root.mainloop()
 
 if __name__ == "__main__":
-    #test()
-    train()
+    test()
+    #train()
     #gess()
     pass

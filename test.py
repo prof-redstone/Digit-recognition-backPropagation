@@ -1,8 +1,6 @@
-import train
+import torch
 
-def test():
-    _, _, _, a2 = process_forward(test_images.reshape(-1, 784))
-    accuracy = np.mean(np.argmax(a2, axis=1) == np.argmax(test_labels, axis=1))
-    print(f'Test Accuracy: {accuracy}')
-
-test()
+print("CUDA available: ", torch.cuda.is_available())
+print("CUDA version: ", torch.version.cuda)
+print("Number of GPUs: ", torch.cuda.device_count())
+print("GPU Name: ", torch.cuda.get_device_name(0) if torch.cuda.is_available() else "No GPU")
